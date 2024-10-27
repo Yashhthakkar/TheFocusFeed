@@ -15,16 +15,29 @@ const tones = ['Conversational', 'Professional', 'Informative', 'Enthusiastic', 
 const frequencies = ['Daily', 'Weekly', 'Bi-weekly', 'Monthly']
 
 export default function Survey() {
-  const [selectedTopics, setSelectedTopics] = useState<string[]>([])
+  const [selectedTopics, setSelectedTopics] = useState<{ [key: string]: string }>({})
   const [tone, setTone] = useState('')
   const [frequency, setFrequency] = useState('')
   const [email, setEmail] = useState('')
+  const [additionalInfo, setAdditionalInfo] = useState<{ [key: string]: string }>({
+    Sports: '',
+    Business: '',
+  })
   const router = useRouter()
 
   const handleTopicToggle = (topic: string) => {
-    setSelectedTopics(prev => 
-      prev.includes(topic) ? prev.filter(t => t !== topic) : [...prev, topic]
-    )
+    if (selectedTopics[topic]) {
+      const newTopics = { ...selectedTopics }
+      delete newTopics[topic]
+      setSelectedTopics(newTopics)
+    } else {
+      setSelectedTopics(prev => ({ ...prev, [topic]: '' }))
+    }
+  }
+
+  const handleAdditionalInfoChange = (topic: string, value: string) => {
+    setAdditionalInfo(prev => ({ ...prev, [topic]: value }))
+    setSelectedTopics(prev => ({ ...prev, [topic]: value }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,7 +56,6 @@ export default function Survey() {
     };
 
     try {
-      // Save the survey data in Firestore under the user's document
       await setDoc(doc(db, "users", user.uid), {
         survey: surveyData,
       }, { merge: true });
@@ -66,18 +78,34 @@ export default function Survey() {
               <Button
                 key={topic}
                 type="button"
-                variant={selectedTopics.includes(topic) ? 'default' : 'outline'}
+                variant={selectedTopics[topic] ? 'red' : 'outline'}
                 onClick={() => handleTopicToggle(topic)}
               >
                 {topic}
               </Button>
             ))}
           </div>
-          {selectedTopics.length > 0 && (
+          {selectedTopics['Sports'] !== undefined && (
+            <Input
+              placeholder="Please specify (e.g., Basketball)"
+              value={additionalInfo['Sports']}
+              onChange={(e) => handleAdditionalInfoChange('Sports', e.target.value)}
+              className="mt-2 mb-4"
+            />
+          )}
+          {selectedTopics['Business'] !== undefined && (
+            <Input
+              placeholder="Please specify (e.g., Finance)"
+              value={additionalInfo['Business']}
+              onChange={(e) => handleAdditionalInfoChange('Business', e.target.value)}
+              className="mt-2 mb-4"
+            />
+          )}
+          {Object.keys(selectedTopics).length > 0 && (
             <div className="flex flex-wrap gap-2 mt-4">
-              {selectedTopics.map(topic => (
+              {Object.entries(selectedTopics).map(([topic, detail]) => (
                 <div key={topic} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center">
-                  {topic}
+                  {detail ? `${topic}: ${detail}` : topic}
                   <button
                     type="button"
                     onClick={() => handleTopicToggle(topic)}

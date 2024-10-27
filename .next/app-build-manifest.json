@@ -16,15 +16,15 @@
       "static/chunks/main-app.js",
       "static/chunks/app/signup/page.js"
     ],
-    "/login/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/login/page.js"
-    ],
     "/survey/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/survey/page.js"
+    ],
+    "/newsletter/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/newsletter/page.js"
     ]
   }
 }
