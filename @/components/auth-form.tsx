@@ -50,40 +50,40 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode }) => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600 px-4">
+    <div className="flex min-h-screen items-center justify-center px-4">
       <form
         onSubmit={handleSubmit}
-        className="space-y-6 w-full max-w-md p-8 bg-white rounded-lg shadow-xl"
+        className="space-y-6 w-full max-w-lg"
       >
         <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">
           {mode === "signup" ? "Sign Up" : "Log In"}
         </h2>
-        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+        {error && <p className="text-red-300 text-sm mb-4">{error}</p>}
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email</Label>
+          <Label htmlFor="email" className="text-sm font-medium text-white">Email</Label>
           <Input
             id="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full"
+            className="w-full bg-white/10 text-white placeholder-white/50 border-white/20"
             required
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password" className="text-sm font-medium text-gray-700">Password</Label>
+          <Label htmlFor="password" className="text-sm font-medium text-white">Password</Label>
           <Input
             id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full"
+            className="w-full bg-white/10 text-white placeholder-white/50 border-white/20"
             required
           />
         </div>
         <Button 
           type="submit" 
-          className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg" 
+          className="w-full bg-white text-purple-600 hover:bg-purple-100 font-semibold py-2 px-4 rounded-md transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg" 
           disabled={loading}
         >
           {loading ? "Processing..." : mode === "signup" ? "Create Account" : "Log In"}
