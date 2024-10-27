@@ -1,165 +1,128 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { db, auth } from '@/lib/firebase'
+import { doc, setDoc } from 'firebase/firestore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem, SelectGroup } from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { X } from 'lucide-react'
 
-const topics = ["Technology", "Health", "Sports", "Entertainment", "Business", "Other"]
-const tones = ["Conversational", "Professional", "Informative", "Enthusiastic", "Persuasive", "Authoritative"]
-const frequencies = ["Daily", "Weekly", "Bi-weekly", "Monthly"]
+const topics = ['Technology', 'Health', 'Sports', 'Entertainment', 'Business', 'Other']
+const tones = ['Conversational', 'Professional', 'Informative', 'Enthusiastic', 'Formal', 'Authoritative']
+const frequencies = ['Daily', 'Weekly', 'Bi-weekly', 'Monthly']
 
 export default function Survey() {
-  const [currentQuestion, setCurrentQuestion] = useState(0)
-  const [answers, setAnswers] = useState({
-    topics: [],
-    frequency: '',
-  })
-  const [customTopic, setCustomTopic] = useState('')
-  const [specificSports, setSpecificSports] = useState('')
-  const questionRefs = useRef([])
+  const [selectedTopics, setSelectedTopics] = useState<string[]>([])
+  const [tone, setTone] = useState('')
+  const [frequency, setFrequency] = useState('')
+  const [email, setEmail] = useState('')
   const router = useRouter()
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setCurrentQuestion(Number(entry.target.dataset.question))
-          }
-        })
-      },
-      { threshold: 0.5 }
+  const handleTopicToggle = (topic: string) => {
+    setSelectedTopics(prev => 
+      prev.includes(topic) ? prev.filter(t => t !== topic) : [...prev, topic]
     )
-
-    questionRefs.current.forEach((ref) => observer.observe(ref))
-
-    return () => observer.disconnect()
-  }, [])
-
-  const handleAnswer = (key, value) => {
-    setAnswers((prev) => ({ ...prev, [key]: value }))
   }
 
-  const handleTopicSelect = (topic) => {
-    setAnswers((prev) => ({
-      ...prev,
-      topics: prev.topics.includes(topic)
-        ? prev.topics.filter((t) => t !== topic)
-        : [...prev.topics, topic]
-    }))
-  }
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Survey answers:', answers)
-    router.push('/newsletter')
+
+    const user = auth.currentUser;
+    if (!user) {
+      alert("Please log in to submit the survey.");
+      return;
+    }
+
+    const surveyData = {
+      topics: selectedTopics,
+      tone,
+      frequency,
+    };
+
+    try {
+      // Save the survey data in Firestore under the user's document
+      await setDoc(doc(db, "users", user.uid), {
+        survey: surveyData,
+      }, { merge: true });
+
+      alert("Survey submitted successfully!");
+      router.push('/newsletter');
+    } catch (err) {
+      console.error("Error saving survey data:", err);
+      alert("There was an error submitting your survey. Please try again.");
+    }
   }
 
   return (
     <form onSubmit={handleSubmit} className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto space-y-24">
-        {/* Question 1: Multiple Select for Topics */}
-        <div
-          ref={(el) => (questionRefs.current[0] = el)}
-          data-question={0}
-          className="bg-white shadow-md rounded-lg p-6"
-        >
-          <Label className="text-xl font-semibold mb-4">
-            What topics are you interested in?
-          </Label>
-          <div className="flex flex-wrap gap-4 mt-4">
-            {topics.map((topic) => (
+      <div className="max-w-3xl mx-auto space-y-8">
+        <div className="bg-white shadow-md rounded-lg p-6">
+          <Label className="text-xl font-semibold mb-4 block">What topics are you interested in?</Label>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {topics.map(topic => (
               <Button
                 key={topic}
                 type="button"
-                variant={answers.topics.includes(topic) ? 'default' : 'outline'}
-                onClick={() => handleTopicSelect(topic)}
+                variant={selectedTopics.includes(topic) ? 'default' : 'outline'}
+                onClick={() => handleTopicToggle(topic)}
               >
                 {topic}
               </Button>
             ))}
           </div>
-          {answers.topics.includes("Sports") && (
-            <Input
-              placeholder="Specify a sport (e.g., Basketball)"
-              value={specificSports}
-              onChange={(e) => setSpecificSports(e.target.value)}
-              className="mt-4"
-            />
-          )}
-          {answers.topics.includes("Other") && (
-            <Input
-              placeholder="Enter another topic"
-              value={customTopic}
-              onChange={(e) => setCustomTopic(e.target.value)}
-              className="mt-4"
-            />
+          {selectedTopics.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-4">
+              {selectedTopics.map(topic => (
+                <div key={topic} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center">
+                  {topic}
+                  <button
+                    type="button"
+                    onClick={() => handleTopicToggle(topic)}
+                    className="ml-2 text-blue-600 hover:text-blue-800"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
-        {/* Question 2: Dropdown for Tone Preferences */}
-        <div
-          ref={(el) => (questionRefs.current[1] = el)}
-          data-question={1}
-          className="bg-white shadow-md rounded-lg p-6"
-        >
-          <Label className="text-xl font-semibold mb-4">
+        <div className="bg-white shadow-md rounded-lg p-6">
+          <Label className="text-xl font-semibold mb-4 block">
             What tone preferences do you want your newsletter to be in?
           </Label>
-          <Select
-            value={answers.tone || ''}
-            onValueChange={(value) => handleAnswer('tone', value)}
-          >
-            <SelectTrigger className="mt-4">
+          <Select value={tone} onValueChange={setTone}>
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Select a tone" />
             </SelectTrigger>
             <SelectContent>
-              <SelectGroup>
-                {tones.map((tone) => (
-                  <SelectItem key={tone} value={tone}>
-                    {tone}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
+              {tones.map(t => (
+                <SelectItem key={t} value={t}>{t}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
 
-        {/* Question 3: Dropdown for Newsletter Frequency */}
-        <div
-          ref={(el) => (questionRefs.current[2] = el)}
-          data-question={2}
-          className="bg-white shadow-md rounded-lg p-6"
-        >
-          <Label className="text-xl font-semibold mb-4">
+        <div className="bg-white shadow-md rounded-lg p-6">
+          <Label className="text-xl font-semibold mb-4 block">
             How often do you want to receive your newsletter?
           </Label>
-          <Select
-            value={answers.frequency || ''}
-            onValueChange={(value) => handleAnswer('frequency', value)}
-          >
-            <SelectTrigger className="mt-4">
+          <Select value={frequency} onValueChange={setFrequency}>
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Select a frequency" />
             </SelectTrigger>
             <SelectContent>
-              <SelectGroup>
-                {frequencies.map((freq) => (
-                  <SelectItem key={freq} value={freq}>
-                    {freq}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
+              {frequencies.map(f => (
+                <SelectItem key={f} value={f}>{f}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
-
-        <Button type="submit" className="w-full">
-          Submit Survey
-        </Button>
+        <Button type="submit" className="w-full">Submit Survey</Button>
       </div>
     </form>
   )

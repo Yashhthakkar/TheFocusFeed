@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { DayPicker } from 'react-day-picker'
 import 'react-day-picker/dist/style.css'
+import Groq from "groq-sdk";
+
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export default function Newsletter() {
   const [selectedDate, setSelectedDate] = useState<Date>()
