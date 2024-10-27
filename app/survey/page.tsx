@@ -70,7 +70,6 @@ export default function Survey() {
         createdAt: serverTimestamp()
       }, { merge: true });
       alert("Survey submitted successfully!");
-      router.push('/newsletter');
     } catch (err) {
       console.error("Error saving survey data:", err);
       alert("There was an error submitting your survey. Please try again.");
@@ -159,7 +158,7 @@ export default function Survey() {
             </SelectContent>
           </Select>
         </div>
-        <Button type="submit" className="w-full">Submit Survey</Button>
+        <Button type="submit" className="w-full bg-green">Submit Survey</Button>
       </div>
     </form>
   )
