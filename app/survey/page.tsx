@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { db, auth } from '@/lib/firebase'
-import { doc, setDoc } from 'firebase/firestore'
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,38 +15,35 @@ const tones = ['Conversational', 'Professional', 'Informative', 'Enthusiastic', 
 const frequencies = ['Daily', 'Weekly', 'Bi-weekly', 'Monthly']
 
 export default function Survey() {
-  const [selectedTopics, setSelectedTopics] = useState<{ [key: string]: string }>({})
+  const [selectedTopics, setSelectedTopics] = useState<{ [key: string]: string | true }>({})
   const [tone, setTone] = useState('')
   const [frequency, setFrequency] = useState('')
   const [email, setEmail] = useState('')
-  const [additionalInfo, setAdditionalInfo] = useState<{ [key: string]: string }>({
-    Sports: '',
-    Business: '',
-  })
+  const [additionalInfo, setAdditionalInfo] = useState<{ [key: string]: string }>({})
   const router = useRouter()
 
   const handleTopicToggle = (topic: string) => {
-    if (selectedTopics[topic]) {
+    if (selectedTopics.hasOwnProperty(topic)) {
       const newTopics = { ...selectedTopics }
       delete newTopics[topic]
       setSelectedTopics(newTopics)
+
+      if (additionalInfo.hasOwnProperty(topic)) {
+        const newAdditionalInfo = { ...additionalInfo }
+        delete newAdditionalInfo[topic]
+        setAdditionalInfo(newAdditionalInfo)
+      }
     } else {
-      setSelectedTopics(prev => ({ ...prev, [topic]: '' }))
+      setSelectedTopics(prev => ({ ...prev, [topic]: true }))
+      if (topic === 'Sports' || topic === 'Business') {
+        setAdditionalInfo(prev => ({ ...prev, [topic]: '' }))
+      }
     }
   }
 
   const handleAdditionalInfoChange = (topic: string, value: string) => {
     setAdditionalInfo(prev => ({ ...prev, [topic]: value }))
-    // Update only with additional info if provided; otherwise, remove the topic
-    setSelectedTopics(prev => {
-      if (value) {
-        return { ...prev, [topic]: value }
-      } else {
-        const newTopics = { ...prev }
-        delete newTopics[topic]
-        return newTopics
-      }
-    })
+    setSelectedTopics(prev => ({ ...prev, [topic]: value || true }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,8 +55,7 @@ export default function Survey() {
       return;
     }
   
-    // Process selectedTopics to replace category with additional info if provided
-    const topicsToSave = Object.entries(selectedTopics).map(([topic, detail]) => detail || topic);
+    const topicsToSave = Object.entries(selectedTopics).map(([topic, value]) => (value !== true ? value : topic));
   
     const surveyData = {
       topics: topicsToSave,
@@ -71,8 +67,8 @@ export default function Survey() {
       await setDoc(doc(db, "users", user.uid), {
         email: user.email,
         survey: surveyData,
+        createdAt: serverTimestamp()
       }, { merge: true });
-  
       alert("Survey submitted successfully!");
       router.push('/newsletter');
     } catch (err) {
@@ -91,25 +87,25 @@ export default function Survey() {
               <Button
                 key={topic}
                 type="button"
-                variant={selectedTopics[topic] ? 'red' : 'outline'}
+                variant={selectedTopics.hasOwnProperty(topic) ? 'red' : 'outline'}
                 onClick={() => handleTopicToggle(topic)}
               >
                 {topic}
               </Button>
             ))}
           </div>
-          {selectedTopics['Sports'] !== undefined && (
+          {selectedTopics.hasOwnProperty('Sports') && (
             <Input
               placeholder="Please specify (e.g., Basketball)"
-              value={additionalInfo['Sports']}
+              value={additionalInfo['Sports'] || ''}
               onChange={(e) => handleAdditionalInfoChange('Sports', e.target.value)}
               className="mt-2 mb-4"
             />
           )}
-          {selectedTopics['Business'] !== undefined && (
+          {selectedTopics.hasOwnProperty('Business') && (
             <Input
               placeholder="Please specify (e.g., Finance)"
-              value={additionalInfo['Business']}
+              value={additionalInfo['Business'] || ''}
               onChange={(e) => handleAdditionalInfoChange('Business', e.target.value)}
               className="mt-2 mb-4"
             />
@@ -118,7 +114,7 @@ export default function Survey() {
             <div className="flex flex-wrap gap-2 mt-4">
               {Object.entries(selectedTopics).map(([topic, detail]) => (
                 <div key={topic} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center">
-                  {detail ? `${topic}: ${detail}` : topic}
+                  {detail !== true ? `${topic}: ${detail}` : topic}
                   <button
                     type="button"
                     onClick={() => handleTopicToggle(topic)}
