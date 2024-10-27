@@ -1,9 +1,14 @@
+'use client'
+
 import AuthForm from '@/components/auth-form'
 
 export default function Login() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
-      <h1 className="text-3xl font-bold mb-8">Log In</h1>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600">
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-bold text-white">Login</h1>
+        <p className="text-white mt-2">Welcome back! Please enter your details.</p>
+      </div>
       <AuthForm mode="login" />
     </div>
   )

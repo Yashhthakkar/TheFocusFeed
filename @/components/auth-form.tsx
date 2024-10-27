@@ -2,8 +2,9 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,53 +28,68 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode }) => {
 
     try {
       if (mode === "signup") {
-        await createUserWithEmailAndPassword(auth, email, password);
-        alert("Account created successfully!");
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        await setDoc(doc(db, "users", user.uid), {
+          email: user.email,
+          topics: [],
+          tone: [],
+          frequency: ""
+        });
         router.push("/survey");
       } else {
         await signInWithEmailAndPassword(auth, email, password);
-        alert("Logged in successfully!");
         router.push("/survey");
       }
     } catch (err: any) {
       setError(err.message);
+      console.log(err.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-md p-6 bg-white rounded-md shadow-md">
-      <h2 className="text-2xl font-semibold mb-6">
-        {mode === "signup" ? "Sign Up" : "Log In"}
-      </h2>
-      {error && <p className="text-red-500 mb-4">{error}</p>}
-      <div>
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full mt-1"
-          required
-        />
-      </div>
-      <div>
-        <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full mt-1"
-          required
-        />
-      </div>
-      <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? "Processing..." : mode === "signup" ? "Create Account" : "Log In"}
-      </Button>
-    </form>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600 px-4">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-6 w-full max-w-md p-8 bg-white rounded-lg shadow-xl"
+      >
+        <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">
+          {mode === "signup" ? "Sign Up" : "Log In"}
+        </h2>
+        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full"
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="password" className="text-sm font-medium text-gray-700">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full"
+            required
+          />
+        </div>
+        <Button 
+          type="submit" 
+          className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg" 
+          disabled={loading}
+        >
+          {loading ? "Processing..." : mode === "signup" ? "Create Account" : "Log In"}
+        </Button>
+      </form>
+    </div>
   );
 };
 

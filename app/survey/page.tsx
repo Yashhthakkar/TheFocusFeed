@@ -6,18 +6,20 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem, SelectGroup } from '@/components/ui/select'
 
-const questions = [
-  { id: 1, text: "How satisfied are you with our service?", type: "rating" },
-  { id: 2, text: "What features would you like to see in the future?", type: "text" },
-  { id: 3, text: "How likely are you to recommend us to a friend?", type: "rating" },
-  { id: 4, text: "Any additional comments?", type: "text" },
-  { id: 5, text: "Please enter your email for our newsletter:", type: "email" }
-]
+const topics = ["Technology", "Health", "Sports", "Entertainment", "Business", "Other"]
+const tones = ["Conversational", "Professional", "Informative", "Enthusiastic", "Persuasive", "Authoritative"]
+const frequencies = ["Daily", "Weekly", "Bi-weekly", "Monthly"]
 
 export default function Survey() {
   const [currentQuestion, setCurrentQuestion] = useState(0)
-  const [answers, setAnswers] = useState({})
+  const [answers, setAnswers] = useState({
+    topics: [],
+    frequency: '',
+  })
+  const [customTopic, setCustomTopic] = useState('')
+  const [specificSports, setSpecificSports] = useState('')
   const questionRefs = useRef([])
   const router = useRouter()
 
@@ -38,8 +40,17 @@ export default function Survey() {
     return () => observer.disconnect()
   }, [])
 
-  const handleAnswer = (id, value) => {
-    setAnswers((prev) => ({ ...prev, [id]: value }))
+  const handleAnswer = (key, value) => {
+    setAnswers((prev) => ({ ...prev, [key]: value }))
+  }
+
+  const handleTopicSelect = (topic) => {
+    setAnswers((prev) => ({
+      ...prev,
+      topics: prev.topics.includes(topic)
+        ? prev.topics.filter((t) => t !== topic)
+        : [...prev.topics, topic]
+    }))
   }
 
   const handleSubmit = (e) => {
@@ -51,47 +62,104 @@ export default function Survey() {
   return (
     <form onSubmit={handleSubmit} className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto space-y-24">
-        {questions.map((question, index) => (
-          <div
-            key={question.id}
-            ref={(el) => (questionRefs.current[index] = el)}
-            data-question={index}
-            className="bg-white shadow-md rounded-lg p-6"
-          >
-            <Label className="text-xl font-semibold mb-4">{question.text}</Label>
-            {question.type === 'rating' && (
-              <div className="flex justify-between mt-4">
-                {[1, 2, 3, 4, 5].map((rating) => (
-                  <Button
-                    key={rating}
-                    type="button"
-                    variant={answers[question.id] === rating ? 'default' : 'outline'}
-                    onClick={() => handleAnswer(question.id, rating)}
-                  >
-                    {rating}
-                  </Button>
-                ))}
-              </div>
-            )}
-            {question.type === 'text' && (
-              <Textarea
-                value={answers[question.id] || ''}
-                onChange={(e) => handleAnswer(question.id, e.target.value)}
-                className="mt-2"
-              />
-            )}
-            {question.type === 'email' && (
-              <Input
-                type="email"
-                value={answers[question.id] || ''}
-                onChange={(e) => handleAnswer(question.id, e.target.value)}
-                className="mt-2"
-                required
-              />
-            )}
+        {/* Question 1: Multiple Select for Topics */}
+        <div
+          ref={(el) => (questionRefs.current[0] = el)}
+          data-question={0}
+          className="bg-white shadow-md rounded-lg p-6"
+        >
+          <Label className="text-xl font-semibold mb-4">
+            What topics are you interested in?
+          </Label>
+          <div className="flex flex-wrap gap-4 mt-4">
+            {topics.map((topic) => (
+              <Button
+                key={topic}
+                type="button"
+                variant={answers.topics.includes(topic) ? 'default' : 'outline'}
+                onClick={() => handleTopicSelect(topic)}
+              >
+                {topic}
+              </Button>
+            ))}
           </div>
-        ))}
-        <Button type="submit" className="w-full">Submit Survey</Button>
+          {answers.topics.includes("Sports") && (
+            <Input
+              placeholder="Specify a sport (e.g., Basketball)"
+              value={specificSports}
+              onChange={(e) => setSpecificSports(e.target.value)}
+              className="mt-4"
+            />
+          )}
+          {answers.topics.includes("Other") && (
+            <Input
+              placeholder="Enter another topic"
+              value={customTopic}
+              onChange={(e) => setCustomTopic(e.target.value)}
+              className="mt-4"
+            />
+          )}
+        </div>
+
+        {/* Question 2: Dropdown for Tone Preferences */}
+        <div
+          ref={(el) => (questionRefs.current[1] = el)}
+          data-question={1}
+          className="bg-white shadow-md rounded-lg p-6"
+        >
+          <Label className="text-xl font-semibold mb-4">
+            What tone preferences do you want your newsletter to be in?
+          </Label>
+          <Select
+            value={answers.tone || ''}
+            onValueChange={(value) => handleAnswer('tone', value)}
+          >
+            <SelectTrigger className="mt-4">
+              <SelectValue placeholder="Select a tone" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {tones.map((tone) => (
+                  <SelectItem key={tone} value={tone}>
+                    {tone}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Question 3: Dropdown for Newsletter Frequency */}
+        <div
+          ref={(el) => (questionRefs.current[2] = el)}
+          data-question={2}
+          className="bg-white shadow-md rounded-lg p-6"
+        >
+          <Label className="text-xl font-semibold mb-4">
+            How often do you want to receive your newsletter?
+          </Label>
+          <Select
+            value={answers.frequency || ''}
+            onValueChange={(value) => handleAnswer('frequency', value)}
+          >
+            <SelectTrigger className="mt-4">
+              <SelectValue placeholder="Select a frequency" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {frequencies.map((freq) => (
+                  <SelectItem key={freq} value={freq}>
+                    {freq}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <Button type="submit" className="w-full">
+          Submit Survey
+        </Button>
       </div>
     </form>
   )
