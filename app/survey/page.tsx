@@ -37,29 +37,42 @@ export default function Survey() {
 
   const handleAdditionalInfoChange = (topic: string, value: string) => {
     setAdditionalInfo(prev => ({ ...prev, [topic]: value }))
-    setSelectedTopics(prev => ({ ...prev, [topic]: value }))
+    // Update only with additional info if provided; otherwise, remove the topic
+    setSelectedTopics(prev => {
+      if (value) {
+        return { ...prev, [topic]: value }
+      } else {
+        const newTopics = { ...prev }
+        delete newTopics[topic]
+        return newTopics
+      }
+    })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+    e.preventDefault();
+  
     const user = auth.currentUser;
     if (!user) {
       alert("Please log in to submit the survey.");
       return;
     }
-
+  
+    // Process selectedTopics to replace category with additional info if provided
+    const topicsToSave = Object.entries(selectedTopics).map(([topic, detail]) => detail || topic);
+  
     const surveyData = {
-      topics: selectedTopics,
+      topics: topicsToSave,
       tone,
       frequency,
     };
-
+  
     try {
       await setDoc(doc(db, "users", user.uid), {
+        email: user.email,
         survey: surveyData,
       }, { merge: true });
-
+  
       alert("Survey submitted successfully!");
       router.push('/newsletter');
     } catch (err) {

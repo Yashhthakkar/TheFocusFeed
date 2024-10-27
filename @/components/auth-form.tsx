@@ -30,12 +30,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode }) => {
       if (mode === "signup") {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
-        await setDoc(doc(db, "users", user.uid), {
-          email: user.email,
-          topics: [],
-          tone: [],
-          frequency: ""
-        });
         router.push("/survey");
       } else {
         await signInWithEmailAndPassword(auth, email, password);
